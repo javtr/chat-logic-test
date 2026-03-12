@@ -1,0 +1,13 @@
+# Archivos de claves privadas y certificados
+*.key
+*.pem
+*.crt
+*.csr
+*.p12
+*.pfx
+*.jks
+
+# Archivos de configuración que puedan contener secretos
+.env
+*.env
+secrets/
