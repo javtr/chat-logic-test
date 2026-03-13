@@ -10,7 +10,7 @@
         .user { background: #0056b3; text-align: right; margin-left: 20%; }
         .bot { background: #333; text-align: left; margin-right: 20%; border-left: 4px solid #00ff88; white-space: pre-wrap; }
         
-        /* Estilos para el indicador de carga */
+        /* Indicador de carga */
         .typing { font-style: italic; color: #888; font-size: 0.9em; }
         .dots:after {
             content: '.';
@@ -25,6 +25,7 @@
 
         input { width: 100%; max-width: 600px; padding: 15px; border-radius: 5px; border: none; outline: none; font-size: 16px; background: #333; color: white; }
         button { margin-top: 10px; padding: 10px 20px; cursor: pointer; background: #00ff88; border: none; font-weight: bold; border-radius: 5px; color: #1a1a1a; }
+        button:hover { background: #00cc6e; }
     </style>
 </head>
 <body>
@@ -40,11 +41,11 @@
             const message = input.value;
             if(!message) return;
 
-            // Mostrar mensaje del usuario
+            // 1. Mostrar mensaje del usuario
             box.innerHTML += `<div class="msg user">${message}</div>`;
             input.value = '';
             
-            // Mostrar indicador de carga
+            // 2. Mostrar indicador de "Pensando"
             const typingId = 'typing-' + Date.now();
             box.innerHTML += `<div id="${typingId}" class="msg bot typing">El experto está analizando tu consulta<span class="dots"></span></div>`;
             box.scrollTop = box.scrollHeight;
@@ -58,16 +59,16 @@
 
                 if (!response.ok) throw new Error('Error en el servidor');
 
-                // Eliminar indicador de carga antes de empezar a escribir
+                // 3. Quitar indicador de carga
                 const typingDiv = document.getElementById(typingId);
                 if (typingDiv) typingDiv.remove();
 
-                // Crear el contenedor para la respuesta del bot
+                // 4. Crear el contenedor para la respuesta progresiva
                 let botMsgDiv = document.createElement('div');
                 botMsgDiv.className = 'msg bot';
                 box.appendChild(botMsgDiv);
 
-                // Procesar el flujo de datos (Streaming)
+                // 5. Leer el flujo de datos (Streaming)
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
 
@@ -75,8 +76,11 @@
                     const { done, value } = await reader.read();
                     if (done) break;
                     
+                    // Decodificar el fragmento y añadirlo al div
                     const chunk = decoder.decode(value, { stream: true });
-                    botMsgDiv.textContent += chunk; // Usamos textContent para mayor seguridad
+                    botMsgDiv.textContent += chunk; 
+                    
+                    // Hacer scroll automático mientras aparece el texto
                     box.scrollTop = box.scrollHeight;
                 }
 
