@@ -2,16 +2,84 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LOF Assistant - Logic Indicators</title>
     <style>
-        body { font-family: sans-serif; background: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; padding: 50px; }
-        #chat-box { width: 100%; max-width: 600px; height: 400px; border: 1px solid #444; background: #222; overflow-y: auto; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        .msg { margin-bottom: 15px; padding: 10px; border-radius: 5px; line-height: 1.4; word-wrap: break-word; }
-        .user { background: #0056b3; text-align: right; margin-left: 20%; }
-        .bot { background: #333; text-align: left; margin-right: 20%; border-left: 4px solid #00ff88; white-space: pre-wrap; }
+        * { box-sizing: border-box; }
+        
+        body { 
+            font-family: sans-serif; 
+            background: #1a1a1a; 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 20px; 
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        h2 { text-align: center; }
+
+        /* Contenedor principal adaptable */
+        #chat-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 800px;
+            height: 80vh; /* Ocupa el 80% del alto de la pantalla */
+        }
+
+        #chat-box { 
+            flex: 1;
+            border: 1px solid #444; 
+            background: #222; 
+            overflow-y: auto; 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin-bottom: 15px; 
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .msg { 
+            padding: 12px 16px; 
+            border-radius: 8px; 
+            line-height: 1.5; 
+            word-wrap: break-word; 
+            max-width: 85%;
+        }
+
+        /* Usamos flexbox para alinear los mensajes a los lados */
+        .user { 
+            background: #0056b3; 
+            align-self: flex-end; 
+            border-bottom-right-radius: 0;
+        }
+
+        .bot { 
+            background: #333; 
+            align-self: flex-start; 
+            border-left: 4px solid #00ff88; 
+            border-bottom-left-radius: 0;
+            white-space: pre-wrap; 
+            width: 100%;
+        }
+
+        /* Etiqueta de tiempo de respuesta */
+        .time-badge {
+            font-size: 0.75em;
+            color: #888;
+            display: block;
+            margin-bottom: 8px;
+            font-family: monospace;
+            border-bottom: 1px solid #444;
+            padding-bottom: 4px;
+        }
         
         /* Indicador de carga */
-        .typing { font-style: italic; color: #888; font-size: 0.9em; }
+        .typing { font-style: italic; color: #888; font-size: 0.9em; max-width: fit-content; }
         .dots:after {
             content: '.';
             animation: dots 1.5s steps(5, end) infinite;
@@ -23,22 +91,64 @@
             80%, 100% { content: ''; }
         }
 
-        input { width: 100%; max-width: 600px; padding: 15px; border-radius: 5px; border: none; outline: none; font-size: 16px; background: #333; color: white; }
-        button { margin-top: 10px; padding: 10px 20px; cursor: pointer; background: #00ff88; border: none; font-weight: bold; border-radius: 5px; color: #1a1a1a; }
+        /* Área inferior de input y botón */
+        .input-area {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        input { 
+            flex: 1; 
+            padding: 15px; 
+            border-radius: 5px; 
+            border: 1px solid #444; 
+            outline: none; 
+            font-size: 16px; 
+            background: #333; 
+            color: white; 
+        }
+
+        button { 
+            padding: 15px 20px; 
+            cursor: pointer; 
+            background: #00ff88; 
+            border: none; 
+            font-weight: bold; 
+            border-radius: 5px; 
+            color: #1a1a1a; 
+            white-space: nowrap;
+        }
+        
         button:hover { background: #00cc6e; }
+
+        /* Ajustes específicos para pantallas pequeñas (Celulares) */
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .msg { max-width: 95%; }
+            .input-area { flex-direction: column; }
+            button { width: 100%; padding: 15px; }
+            #chat-container { height: 85vh; }
+        }
     </style>
 </head>
 <body>
     <h2>LOF Assistant Tester</h2>
-    <div id="chat-box"></div>
-    <input type="text" id="userInput" placeholder="Escribe tu duda sobre la suite LOF..." onkeypress="if(event.key === 'Enter') sendMessage()">
-    <button onclick="sendMessage()">Enviar Mensaje</button>
+    
+    <div id="chat-container">
+        <div id="chat-box"></div>
+        
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Escribe tu duda sobre la suite LOF..." onkeypress="if(event.key === 'Enter') sendMessage()">
+            <button onclick="sendMessage()">Enviar Mensaje</button>
+        </div>
+    </div>
 
     <script>
         async function sendMessage() {
             const input = document.getElementById('userInput');
             const box = document.getElementById('chat-box');
-            const message = input.value;
+            const message = input.value.trim();
             if(!message) return;
 
             // 1. Mostrar mensaje del usuario
@@ -50,6 +160,9 @@
             box.innerHTML += `<div id="${typingId}" class="msg bot typing">El experto está analizando tu consulta<span class="dots"></span></div>`;
             box.scrollTop = box.scrollHeight;
 
+            // 3. Iniciar cronómetro de latencia
+            const startTime = Date.now();
+
             try {
                 const response = await fetch('https://chat.logicindicators.com/ask', {
                     method: 'POST',
@@ -57,15 +170,29 @@
                     body: JSON.stringify({ message: message })
                 });
 
+                // Calcular el tiempo exacto en que el servidor abrió la conexión (TTFB)
+                const ttfb = ((Date.now() - startTime) / 1000).toFixed(2);
+
                 if (!response.ok) throw new Error('Error en el servidor');
 
-                // 3. Quitar indicador de carga
+                // Quitar indicador de carga
                 const typingDiv = document.getElementById(typingId);
                 if (typingDiv) typingDiv.remove();
 
                 // 4. Crear el contenedor para la respuesta progresiva
                 let botMsgDiv = document.createElement('div');
                 botMsgDiv.className = 'msg bot';
+                
+                // Agregar la etiqueta de tiempo
+                let timeBadge = document.createElement('span');
+                timeBadge.className = 'time-badge';
+                timeBadge.innerText = `⏱️ Inició en ${ttfb}s`;
+                botMsgDiv.appendChild(timeBadge);
+
+                // Contenedor para el texto real de la IA
+                let textContainer = document.createElement('span');
+                botMsgDiv.appendChild(textContainer);
+                
                 box.appendChild(botMsgDiv);
 
                 // 5. Leer el flujo de datos (Streaming)
@@ -76,9 +203,9 @@
                     const { done, value } = await reader.read();
                     if (done) break;
                     
-                    // Decodificar el fragmento y añadirlo al div
+                    // Decodificar el fragmento y añadirlo al texto
                     const chunk = decoder.decode(value, { stream: true });
-                    botMsgDiv.textContent += chunk; 
+                    textContainer.textContent += chunk; 
                     
                     // Hacer scroll automático mientras aparece el texto
                     box.scrollTop = box.scrollHeight;
